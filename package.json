@@ -1,0 +1,20 @@
+{
+  "name": "@frptools/propagate",
+  "version": "1.0.0",
+  "description": "[FRPTools] Propagate is a fast, minimal signalling library",
+  "main": "src/index.js",
+  "module": "src/index.js",
+  "contributors": [
+    "Nathan Ridley <axefrog@gmail.com>"
+  ],
+  "license": "MIT",
+  "bugs": "https://github.com/frptools/propagate/issues",
+  "repository": "git@github.com:axefrog/propagate.git",
+  "private": true,
+  "dependencies": {
+    "@frptools/corelib": "^1.1.1"
+  },
+  "devDependencies": {
+    "@frptools/config": "^1.0.2"
+  }
+}

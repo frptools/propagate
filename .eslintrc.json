@@ -1,0 +1,16 @@
+{
+  "extends": "../salix/.eslintrc.json",
+  "env": {
+    "browser": true,
+    "commonjs": true
+  },
+  "globals": {
+    "require": true,
+    "ResizeObserver": true
+  },
+  "rules": {
+    "no-multi-spaces": "warn",
+    "spaced-comment": "warn",
+    "comma-spacing": "warn"
+  }
+}
