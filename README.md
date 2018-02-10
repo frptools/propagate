@@ -80,21 +80,21 @@ and the observer in the example receives only the final result of the cascade of
 within the upstream graph.
 
 ```js
-import { signal } from '@frptools/propagate'
+import * as P from '@frptools/propagate'
 
 const add = (a, b) => a + b;
 const subtract = (a, b) => a - b;
 const multiply = (a, b) => a * b;
 const negative = (a) => -a;
 
-const a = signal(2);
-const b = signal(4);
-const c = signal(add, a, b);
-const d = signal(subtract, b, a);
-const e = signal(Math.pow, c, a);
-const f = signal(negative, e);
-const g = signal(multiply, e, d);
-const h = signal(add, f, g);
+const a = P.source(2);
+const b = P.source(4);
+const c = P.compute(add, a, b);
+const d = P.compute(subtract, b, a);
+const e = P.compute(Math.pow, c, a);
+const f = P.compute(negative, e);
+const g = P.compute(multiply, e, d);
+const h = P.compute(add, f, g);
 
 const show = x => console.log(`the value is now: ${x}`);
 h.observe(show); // --> the value is now: 36

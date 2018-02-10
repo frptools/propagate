@@ -1,120 +1,151 @@
 import * as F from '@frptools/corelib';
-import { SignalChannel } from './SignalChannel';
-import { Observer } from './Observer';
-
-const emptyArray = [];
+import { RefCounter } from './RefCounter';
 
 export class Signal {
-  constructor (f, args = emptyArray) {
-    this._f = f;
-    this._outputs = [];
-    this._value = void 0;
+  constructor (inputs = []) {
+    this.inputs = inputs;
+    this.outputs = [];
+    this.rank = 0;
+    this.active = false;
+    this.value = void 0;
+    this.pending = false;
+    this.refs = new RefCounter();
+    this.id = F.numericId();
+  }
 
-    let rank = 0;
-    if (args.length > 0) {
-      const inputs = new Array(args.length);
-      this._inputs = inputs;
-      this._args = new Array(args.length);
-      if (f.length > 0) {
-        for (let i = 0; i < args.length; i++) {
-          inputs[i] = new SignalChannel(i, args[i], this);
-          rank = F.max(rank, args[i]._rank);
-        }
-      }
+  get label () {
+    return `[${this.id}: ${this.f ? this.f.name || this.f.toString().substr(this.f.toString().indexOf('=>') + 3) : this.constructor.name === 'SubjectSignal' ? `Subject(${this._value})` : this.constructor.name}]`;
+  }
+
+  log (...args) {
+    console.log(this.label, ...args);
+  }
+
+  debug (...args) {
+    console.debug(this.label, ...args);
+  }
+
+  set (/* value, key */) {
+    // this.debug(`(${key}) is being assigned a value of`, value);
+    return false;
+  }
+
+  recompute () {
+    return false;
+  }
+
+  connect (output, ref) {
+    const isNewRef = this.refs.add(output, ref);
+
+    this.debug(`is being connected to by`, output.sink.label, ref.label);
+    const { outputs } = this;
+    if (!outputs.includes(output)) {
+      this.log('adding output to collection', ref.label);
+      outputs.push(output);
+    }
+    if (!this.active) {
+      this.log('activating', ref.label);
+      activate(this, ref);
+    }
+    else if (isNewRef) {
+      this.log('connecting ref to upstream sources', ref.label);
+      connect(this, ref);
+    }
+    if (isNewRef) {
+      this.log('added ref to local set', ref.label);
     }
     else {
-      this._inputs = emptyArray;
-      this._args = emptyArray;
-    }
-
-    this._rank = rank;
-  }
-
-  get value () {
-    return this._value;
-  }
-
-  observe (f = F.noop) {
-    return new Observer(f, this);
-  }
-
-  connect (channel) {
-    this._outputs.push(channel);
-    return this._active ? this._value : this._activate();
-  }
-
-  disconnect (channel) {
-    const outputs = this._outputs;
-    const lastIndex = outputs.length - 1;
-
-    for (let i = 0; i <= lastIndex; i++) {
-      if (outputs[i] === channel) {
-        if (i < lastIndex) {
-          outputs[i] = outputs[lastIndex];
-        }
-        outputs.length = lastIndex;
-      }
-    }
-
-    if (outputs.length === 0) {
-      this._deactivate();
+      this.debug('NOT NEW', ref.label);
     }
   }
 
-  _setArg (index, value) {
-    if (this._args[index] === value) {
-      return false;
-    }
-    this._args[index] = value;
-    return true;
-  }
-
-  _propagate (cascade) {
-    const value = this._value;
-    const outputs = this._outputs;
-    for (let i = 0; i < outputs.length; i++) {
-      const output = outputs[i];
-      if (F.isDefined(cascade)) {
-        if (output.dispatch(value)) {
-          cascade.add(output.sink);
-        }
-      }
-    }
-  }
-
-  _recompute () {
-    const value = this._f.apply(null, this._args);
-    if (value === this._value) {
-      return false;
-    }
-    this._value = value;
-    return true;
-  }
-
-  _activate () {
-    if (this._active) {
-      return this._value;
-    }
-    this._active = true;
-    const inputs = this._inputs;
-    const args = this._args;
-    for (let i = 0; i < inputs.length; i++) {
-      args[i] = inputs[i].attach();
-    }
-    this._recompute();
-    return this._value;
-  }
-
-  _deactivate () {
-    if (!this._active) {
+  disconnect (output, ref) {
+    if (!this.refs.remove(output, ref)) {
+      // this.debug('REF MISSING', ref.label);
       return;
     }
-    this._active = false;
-    const inputs = this._inputs;
-    for (let i = 0; i < this._args.length; i++) {
-      this._args[i] = void 0;
-      inputs[i].detach();
+    this.debug(this.label, 'disconnecting', ref.label);
+    // this.refs.delete(ref);
+    if (this.refs.isEmpty) {
+      this.active = false;
+      disconnect(this, ref);
+      this.outputs.length = 0;
+      this.debug(this.label, 'DEACTIVATED', ref.label);
     }
-    this._value = void 0;
+    else {
+      disconnect(this, ref);
+      const { outputs } = this;
+      const lastIndex = outputs.length - 1;
+      for (let i = 0; i <= lastIndex; i++) {
+        if (outputs[i] === output) {
+          this.log('output removed', ref.label);
+          if (i < lastIndex) {
+            outputs[i] = outputs[lastIndex];
+          }
+          outputs.length = lastIndex;
+          break;
+        }
+      }
+      this.log(this.label, 'disconnected', ref.label);
+    }
+  }
+
+  propagate () {
+    const { value, outputs } = this;
+    for (let i = 0; i < outputs.length; i++) {
+      const output = outputs[i];
+      if (output.set(value)) {
+        const sink = output.sink;
+        if (sink.recompute()) {
+          sink.propagate();
+        }
+      }
+    }
+  }
+}
+
+function updateRank (signal) {
+  const { inputs } = signal;
+  if (inputs.length === 0) {
+    return;
+  }
+
+  inputs.sort(compareRank);
+  const rank = inputs[0].rank + 1;
+
+  if (rank !== signal.rank) {
+    signal.rank = rank;
+    // signal.log(`update rank to ${rank}`);
+    const { outputs } = signal;
+    for (let i = 0; i < outputs.length; i++) {
+      outputs[i].rank = rank;
+    }
+  }
+}
+
+function compareRank (a, b) {
+  return b.rank - a.rank;
+}
+
+function activate (signal, ref) {
+  signal.log('ACTIVATE');
+  signal.active = true;
+  connect(signal, ref);
+  signal.recompute();
+  updateRank(signal);
+}
+
+function connect (signal, ref) {
+  signal.log('connect', ref.label);
+  const { inputs } = signal;
+  for (let i = 0; i < inputs.length; i++) {
+    inputs[i].connect(ref);
+  }
+}
+
+function disconnect (signal, ref) {
+  const { inputs } = signal;
+  for (let i = 0; i < inputs.length; i++) {
+    inputs[i].disconnect(ref);
   }
 }

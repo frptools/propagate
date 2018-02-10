@@ -1,16 +1,32 @@
-export class Observer {
+import * as F from '@frptools/corelib';
+import { SignalInput } from './SignalInput';
+
+export const observe = F.curry2(function observe (f, signal) {
+  return new Observer(f, signal);
+});
+
+class Observer {
   constructor (f, signal) {
-    this.signal = signal;
-    this._input = { dispatch: f };
-    this.reconnect();
+    this.id = F.numericId();
+    this.f = f;
+    this.source = new SignalInput(signal, this);
+    this.source.connect(this);
+  }
+
+  get label () {
+    return `[${this.id}: OBSERVER]`;
+  }
+
+  set (value) {
+    this.f.call(null, value, this);
+    return false;
   }
 
   reconnect () {
-    const value = this.signal.connect(this._input);
-    this._input.dispatch(value);
+    this.source.connect(this);
   }
 
   disconnect () {
-    this.signal.disconnect(this._input);
+    this.source.disconnect(this);
   }
 }
