@@ -1,7 +1,5 @@
 import * as F from '@frptools/corelib';
-import { Signal } from './Signal';
-import { SignalInput } from './SignalInput';
-import { Signaller } from './Signaller';
+import { Signal, SignalInput, Signaller, SIGNAL_VALUE } from '../core';
 
 export function value (value, source) {
   return new SubjectSignal(value, source);
@@ -12,7 +10,7 @@ export class SubjectSignal extends Signal {
     // const inputs = [];
     super();
 
-    this._value = value;
+    this[SIGNAL_VALUE] = value;
     this._signaller = new Signaller();
     this._source = source;
 
@@ -22,21 +20,21 @@ export class SubjectSignal extends Signal {
   }
 
   _set (value, signaller) {
-    if (this._value === value) {
+    if (this[SIGNAL_VALUE] === value) {
       return false;
     }
-    this._value = value;
+    this[SIGNAL_VALUE] = value;
     signaller.add(this);
     return true;
   }
 
   get value () {
-    return this._value;
+    return this[SIGNAL_VALUE];
   }
 
   set value (value) {
-    // if (this._value !== value) {
-    //   this._value = value;
+    // if (this[SIGNAL_VALUE] !== value) {
+    //   this[SIGNAL_VALUE] = value;
     //   this.propagate();
     // }
     const signaller = this._signaller;

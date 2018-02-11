@@ -1,6 +1,8 @@
 import * as F from '@frptools/corelib';
 // import * as RBT from '@collectable/red-black-tree';
 
+import { SIGNAL_VALUE } from './Signal';
+
 export function newSignaller () {
   return new Signaller();
 }
@@ -41,10 +43,10 @@ export class Signaller {
   }
 
   set (signal, value) {
-    if (signal.value === value) {
+    if (signal[SIGNAL_VALUE] === value) {
       return false;
     }
-    signal.value = value;
+    signal[SIGNAL_VALUE] = value;
     this.add(signal);
     return true;
   }
@@ -85,7 +87,7 @@ export class Signaller {
         const signal = queue[i];
         signal.pending = false;
         if (signal.recompute()) {
-          // signal.log('recomputed value:', signal.value);
+          // signal.log('recomputed value:', signal[SIGNAL_VALUE]);
           const { outputs } = signal;
           for (let j = 0; j < outputs.length; j++) {
             const output = outputs[j];

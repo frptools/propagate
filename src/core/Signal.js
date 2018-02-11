@@ -1,28 +1,43 @@
 import * as F from '@frptools/corelib';
 import { RefCounter } from './RefCounter';
 
+export const SIGNAL = Symbol('Signal');
+export const SIGNAL_VALUE = Symbol('Signal.Value');
+
+export function isSignal (value) {
+  return F.isObject(value) && SIGNAL in value;
+}
+
 export class Signal {
   constructor (inputs = []) {
     this.inputs = inputs;
     this.outputs = [];
     this.rank = 0;
     this.active = false;
-    this.value = void 0;
+    this[SIGNAL_VALUE] = void 0;
     this.pending = false;
     this.refs = new RefCounter();
     this.id = F.numericId();
   }
 
+  get [SIGNAL] () {
+    return this;
+  }
+
+  get value () {
+    return this[SIGNAL_VALUE];
+  }
+
   get label () {
-    return `[${this.id}: ${this.f ? this.f.name || this.f.toString().substr(this.f.toString().indexOf('=>') + 3) : this.constructor.name === 'SubjectSignal' ? `Subject(${this._value})` : this.constructor.name}]`;
+    return `[${this.id}: ${this.f && this.f.name || (this.constructor.name === 'SubjectSignal' ? `Subject(${this.value})` : this.constructor.name)}]`;
   }
 
   log (...args) {
-    console.log(this.label, ...args);
+    // console.log(this.label, ...args);
   }
 
   debug (...args) {
-    console.debug(this.label, ...args);
+    // console.debug(this.label, ...args);
   }
 
   set (/* value, key */) {
@@ -44,8 +59,10 @@ export class Signal {
       outputs.push(output);
     }
     if (!this.active) {
+      this.activating();
       this.log('activating', ref.label);
       activate(this, ref);
+      this.activated();
     }
     else if (isNewRef) {
       this.log('connecting ref to upstream sources', ref.label);
@@ -67,10 +84,12 @@ export class Signal {
     this.debug(this.label, 'disconnecting', ref.label);
     // this.refs.delete(ref);
     if (this.refs.isEmpty) {
+      this.deactivating();
       this.active = false;
       disconnect(this, ref);
       this.outputs.length = 0;
       this.debug(this.label, 'DEACTIVATED', ref.label);
+      this.deactivated();
     }
     else {
       disconnect(this, ref);
@@ -90,6 +109,11 @@ export class Signal {
     }
   }
 
+  activating () {}
+  activated () {}
+  deactivating () {}
+  deactivated () {}
+
   propagate () {
     const { value, outputs } = this;
     for (let i = 0; i < outputs.length; i++) {
@@ -101,6 +125,13 @@ export class Signal {
         }
       }
     }
+  }
+
+  valueOf () {
+    if (!this.active) {
+      F.throwInvalidOperation(`Cannot evaluate an inactive signal`);
+    }
+    return F.valueOf(this.value);
   }
 }
 

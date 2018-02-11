@@ -1,10 +1,10 @@
 import * as F from '@frptools/corelib';
-import { Signal } from './Signal';
+import { isSignal, SIGNAL, SIGNAL_VALUE } from './Signal';
 import { RefCounter } from './RefCounter';
 
 export class SignalInput {
   constructor (source, sink, key) {
-    this.source = source;
+    this.source = source[SIGNAL];
     this.sink = sink;
     this.key = key;
     this.rank = 0;
@@ -12,21 +12,29 @@ export class SignalInput {
     this.refs = new RefCounter();
   }
 
+  get label () {
+    return this.sink.label;
+  }
+
   get value () {
-    return this.source.value;
+    return this.source[SIGNAL_VALUE];
   }
 
   set (value) {
-    if (F.isDefined(this.inner)) {
-      this.inner.disconnect(this);
-      this.inner = void 0;
-    }
-    if (value instanceof Signal) {
+    if (isSignal(value)) {
+      const oldInner = this.inner;
       this.inner = new SignalInput(value, this.sink, this.key);
-      this.inner.connect(this);
+      this.inner.connect(this.inner);
+      if (F.isDefined(oldInner)) {
+        oldInner.disconnect(oldInner);
+      }
       return false;
     }
     else {
+      if (F.isDefined(this.inner)) {
+        this.inner.disconnect(this.inner);
+        this.inner = void 0;
+      }
       return this.sink.set(value, this);
     }
   }
@@ -35,7 +43,6 @@ export class SignalInput {
     if (!this.refs.add(this, ref)) {
       return;
     }
-    // this.refs.add(ref);
     const { source } = this;
     source.connect(this, ref);
     this.rank = source.rank;

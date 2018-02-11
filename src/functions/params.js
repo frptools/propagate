@@ -1,5 +1,8 @@
-import { Signal } from './Signal';
-import { SignalInput } from './SignalInput';
+import { Signal, SignalInput, SIGNAL_VALUE } from '../core';
+
+export function params (...args) {
+  return new ParameterizedSignal(args);
+}
 
 export class ParameterizedSignal extends Signal {
   constructor (sources) {
@@ -29,7 +32,7 @@ export class ParameterizedSignal extends Signal {
   }
 
   recompute () {
-    this.value = new Array(...this.params);
+    this[SIGNAL_VALUE] = new Array(...this.params);
     return true;
   }
 }

@@ -1,10 +1,10 @@
-import { Signal, SignalInput } from '../core';
+import { Signal, SignalInput, SIGNAL_VALUE } from '../core';
 
 export function proxy (init, ...args) {
   return new ProxySignal(init, args);
 }
 
-class ProxySignal extends Signal {
+export class ProxySignal extends Signal {
   constructor (init, args) {
     super();
     this.init = init;
@@ -13,10 +13,11 @@ class ProxySignal extends Signal {
 
   set (value) {
     // this.debug(`is being assigned a value of`, value);
-    if (this.value === value || (value !== value && this.value !== this.value /* NaN === NaN */)) {
+    const currentValue = this[SIGNAL_VALUE];
+    if (currentValue === value || (value !== value && currentValue !== currentValue /* NaN === NaN */)) {
       return false;
     }
-    this.value = value;
+    this[SIGNAL_VALUE] = value;
     return true;
   }
 

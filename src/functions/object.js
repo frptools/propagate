@@ -1,5 +1,4 @@
-import { Signal } from './Signal';
-import { SignalInput } from './SignalInput';
+import { Signal, SignalInput, SIGNAL_VALUE } from '../core';
 
 export function object (sources) {
   return new ObjectSignal(sources);
@@ -35,7 +34,7 @@ export class ObjectSignal extends Signal {
   }
 
   recompute () {
-    this.value = Object.assign({}, this.props);
+    this[SIGNAL_VALUE] = Object.assign({}, this.props);
     return true;
   }
 }

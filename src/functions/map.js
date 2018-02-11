@@ -1,10 +1,10 @@
-import { Signal, SignalInput } from '../core';
+import { Signal, SignalInput, SIGNAL_VALUE } from '../core';
 
 export function map (f, source) {
   return new MapSignal(f, source);
 }
 
-class MapSignal extends Signal {
+export class MapSignal extends Signal {
   constructor (f, source) {
     const inputs = [void 0];
     super(inputs);
@@ -25,8 +25,8 @@ class MapSignal extends Signal {
   recompute () {
     const { f } = this;
     const value = f(this.arg);
-    if (value !== this.value) {
-      this.value = value;
+    if (value !== this[SIGNAL_VALUE]) {
+      this[SIGNAL_VALUE] = value;
       return true;
     }
     return false;
