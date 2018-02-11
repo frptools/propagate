@@ -12,10 +12,6 @@ export class SignalInput {
     this.refs = new RefCounter();
   }
 
-  get label () {
-    return this.sink.label;
-  }
-
   get value () {
     return this.source[SIGNAL_VALUE];
   }

@@ -7,16 +7,11 @@ export function value (value, source) {
 
 export class SubjectSignal extends Signal {
   constructor (value, source) {
-    // const inputs = [];
     super();
 
     this[SIGNAL_VALUE] = value;
     this._signaller = new Signaller();
     this._source = source;
-
-    // if (F.isDefined(source)) {
-    //   inputs.push(new SignalInput(source, this));
-    // }
   }
 
   _set (value, signaller) {
@@ -33,10 +28,6 @@ export class SubjectSignal extends Signal {
   }
 
   set value (value) {
-    // if (this[SIGNAL_VALUE] !== value) {
-    //   this[SIGNAL_VALUE] = value;
-    //   this.propagate();
-    // }
     const signaller = this._signaller;
     if (this._set(value, this._signaller)) {
       signaller.next();
@@ -69,7 +60,6 @@ export class SubjectSignal extends Signal {
   disconnect (output, ref) {
     super.disconnect(output, ref);
     if (F.isDefined(this._source) && !this.active) {
-      this.debug('INPUTS CLEARED');
       this.inputs.length = 0;
     }
   }

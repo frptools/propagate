@@ -17,7 +17,6 @@ export class Signal {
     this[SIGNAL_VALUE] = void 0;
     this.pending = false;
     this.refs = new RefCounter();
-    this.id = F.numericId();
   }
 
   get [SIGNAL] () {
@@ -28,20 +27,7 @@ export class Signal {
     return this[SIGNAL_VALUE];
   }
 
-  get label () {
-    return `[${this.id}: ${this.f && this.f.name || (this.constructor.name === 'SubjectSignal' ? `Subject(${this.value})` : this.constructor.name)}]`;
-  }
-
-  log (...args) {
-    // console.log(this.label, ...args);
-  }
-
-  debug (...args) {
-    // console.debug(this.label, ...args);
-  }
-
   set (/* value, key */) {
-    // this.debug(`(${key}) is being assigned a value of`, value);
     return false;
   }
 
@@ -51,44 +37,29 @@ export class Signal {
 
   connect (output, ref) {
     const isNewRef = this.refs.add(output, ref);
-
-    this.debug(`is being connected to by`, output.sink.label, ref.label);
     const { outputs } = this;
     if (!outputs.includes(output)) {
-      this.log('adding output to collection', ref.label);
       outputs.push(output);
     }
     if (!this.active) {
       this.activating();
-      this.log('activating', ref.label);
       activate(this, ref);
       this.activated();
     }
     else if (isNewRef) {
-      this.log('connecting ref to upstream sources', ref.label);
       connect(this, ref);
-    }
-    if (isNewRef) {
-      this.log('added ref to local set', ref.label);
-    }
-    else {
-      this.debug('NOT NEW', ref.label);
     }
   }
 
   disconnect (output, ref) {
     if (!this.refs.remove(output, ref)) {
-      // this.debug('REF MISSING', ref.label);
       return;
     }
-    this.debug(this.label, 'disconnecting', ref.label);
-    // this.refs.delete(ref);
     if (this.refs.isEmpty) {
       this.deactivating();
       this.active = false;
       disconnect(this, ref);
       this.outputs.length = 0;
-      this.debug(this.label, 'DEACTIVATED', ref.label);
       this.deactivated();
     }
     else {
@@ -97,7 +68,6 @@ export class Signal {
       const lastIndex = outputs.length - 1;
       for (let i = 0; i <= lastIndex; i++) {
         if (outputs[i] === output) {
-          this.log('output removed', ref.label);
           if (i < lastIndex) {
             outputs[i] = outputs[lastIndex];
           }
@@ -105,7 +75,6 @@ export class Signal {
           break;
         }
       }
-      this.log(this.label, 'disconnected', ref.label);
     }
   }
 
@@ -128,9 +97,6 @@ export class Signal {
   }
 
   valueOf () {
-    if (!this.active) {
-      F.throwInvalidOperation(`Cannot evaluate an inactive signal`);
-    }
     return F.valueOf(this.value);
   }
 }
@@ -146,7 +112,6 @@ function updateRank (signal) {
 
   if (rank !== signal.rank) {
     signal.rank = rank;
-    // signal.log(`update rank to ${rank}`);
     const { outputs } = signal;
     for (let i = 0; i < outputs.length; i++) {
       outputs[i].rank = rank;
@@ -159,7 +124,6 @@ function compareRank (a, b) {
 }
 
 function activate (signal, ref) {
-  signal.log('ACTIVATE');
   signal.active = true;
   connect(signal, ref);
   signal.recompute();
@@ -167,7 +131,6 @@ function activate (signal, ref) {
 }
 
 function connect (signal, ref) {
-  signal.log('connect', ref.label);
   const { inputs } = signal;
   for (let i = 0; i < inputs.length; i++) {
     inputs[i].connect(ref);

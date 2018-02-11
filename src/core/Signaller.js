@@ -1,6 +1,4 @@
 import * as F from '@frptools/corelib';
-// import * as RBT from '@collectable/red-black-tree';
-
 import { SIGNAL_VALUE } from './Signal';
 
 export function newSignaller () {
@@ -52,8 +50,6 @@ export class Signaller {
   }
 
   next () {
-    // console.debug('--------------------------');
-    // console.log(F.formatDate('HH:mm:ss.SSS', new Date()));
     if (this.active) {
       return;
     }
@@ -69,14 +65,7 @@ export class Signaller {
       const [rank, queue] = queues[0];
 
       if (this.baseline >= rank) {
-        // if (++count > 150) {
-        //   throw new Error('NOPE');
-        // }
-
-        // console.debug('ASYNC', this.baseline, rank);
-
         setTimeout(() => this.next(), 1);
-
         break;
       }
 
@@ -87,7 +76,6 @@ export class Signaller {
         const signal = queue[i];
         signal.pending = false;
         if (signal.recompute()) {
-          // signal.log('recomputed value:', signal[SIGNAL_VALUE]);
           const { outputs } = signal;
           for (let j = 0; j < outputs.length; j++) {
             const output = outputs[j];

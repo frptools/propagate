@@ -17,10 +17,6 @@ class Observer {
     this.source.connect(this);
   }
 
-  get label () {
-    return `[${this.id}: OBSERVER]`;
-  }
-
   set (value) {
     this.f.call(null, value, this);
     return false;

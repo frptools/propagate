@@ -12,7 +12,6 @@ export class ProxySignal extends Signal {
   }
 
   set (value) {
-    // this.debug(`is being assigned a value of`, value);
     const currentValue = this[SIGNAL_VALUE];
     if (currentValue === value || (value !== value && currentValue !== currentValue /* NaN === NaN */)) {
       return false;

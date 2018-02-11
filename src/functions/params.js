@@ -23,7 +23,6 @@ export class ParameterizedSignal extends Signal {
   }
 
   set (value, { key: index }) {
-    // this.debug(`index #${index} is being assigned a value of`, value);
     if (this.params[index] === value) {
       return false;
     }

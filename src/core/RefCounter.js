@@ -47,12 +47,6 @@ export class RefCounter {
       if (set.size === 0) {
         this.registry.delete(output);
       }
-      if (this.registry.size === 0) {
-        console.debug('REFS EMPTY!')
-      }
-      else {
-        console.log(`${this.refs.size} refs remaining`);
-      }
       return true;
     }
     return false;
